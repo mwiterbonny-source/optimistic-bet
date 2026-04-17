@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Optimistic Bet</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #050b1a, #14213d, #1b4965);
+    color: white;
+    overflow: hidden;
+}
+
+/* TITLE */
+header {
+    text-align: center;
+    padding: 10px;
+    font-size: 28px;
+    color: #00ffcc;
+    font-weight: bold;
+}
+
+/* BALANCE TOP RIGHT */
+#balanceBox {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 10px 15px;
+    border-radius: 10px;
+}
+
+/* GAME AREA */
+#gameArea {
+    width: 90%;
+    max-width: 800px;
+    height: 420px;
+    margin: 60px auto 10px;
+    border-radius: 20px;
+    background: radial-gradient(circle at bottom, #0f2027, #203a43, #2c5364);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 25px rgba(0,255,204,0.2);
+}
+
+/* SMALL CIRCULAR PLANE */
+#plane {
+    position: absolute;
+    bottom: 50px;
+    left: 50px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: url("https://cdn-icons-png.flaticon.com/512/201/201623.png") center/cover no-repeat;
+    transition: transform 0.1s linear;
+}
+
+/* MULTIPLIER */
+#multiplier {
+    text-align: center;
+    font-size: 50px;
+    color: #00ffcc;
+    margin-top: 10px;
+}
+
+/* LIVE WIN DISPLAY */
+#liveWin {
+    text-align: center;
+    font-size: 22px;
+    color: #ffd166;
+}
+
+/* STAKE AREA */
+#stakeBox {
+    text-align: center;
+    margin-top: 10px;
+}
+
+button {
+    padding: 10px 15px;
+    margin: 4px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.stakeBtn { background: #3a86ff; color: white; }
+#startBtn { background: #06d6a0; color: white; }
+#cashBtn { background: #ff006e; color: white; }
+
+/* POSITION BUTTONS */
+#bottomControls {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+}
+
+/* CASHOUT RIGHT SIDE */
+#cashContainer {
+    position: fixed;
+    right: 15px;
+    bottom: 15px;
+}
+
+/* STATUS */
+#status {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 18px;
+}
+
+/* CRASH TEXT */
+#flyText {
+    position: absolute;
+    top: 45%;
+    width: 100%;
+    text-align: center;
+    font-size: 40px;
+    color: red;
+    display: none;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<header>✈️ Optimistic Bet</header>
+
+<div id="balanceBox">
+💰 Credits: <span id="balance">1000</span>
+</div>
+
+<div id="multiplier">1.00x</div>
+<div id="liveWin">Winning: 0</div>
+
+<div id="gameArea">
+
+    <div id="plane"></div>
+
+    <div id="flyText">Flew Away 💥</div>
+
+</div>
+
+<div id="stakeBox">
+
+<h3>Stake</h3>
+
+<button class="stakeBtn" onclick="setBet(10)">10</button>
+<button class="stakeBtn" onclick="setBet(20)">20</button>
+<button class="stakeBtn" onclick="setBet(50)">50</button>
+<button class="stakeBtn" onclick="setBet(100)">100</button>
+
+<br><br>
+
+Current Stake: <span id="bet">10</span>
+
+</div>
+
+<!-- START BUTTON BOTTOM CENTER -->
+<div id="bottomControls">
+    <button id="startBtn" onclick="startGame()">Start</button>
+</div>
+
+<!-- CASHOUT RIGHT SIDE -->
+<div id="cashContainer">
+    <button id="cashBtn" onclick="cashOut()">Cash Out</button>
+</div>
+
+<div id="status"></div>
+
+<script>
+
+let multiplier = 1;
+let interval;
+let crashed = false;
+
+let balance = 1000;
+let bet = 10;
+
+function updateBalance() {
+    document.getElementById("balance").innerText = balance.toFixed(0);
+}
+
+function setBet(v) {
+    bet = v;
+    document.getElementById("bet").innerText = bet;
+}
+
+function startGame() {
+
+    if (bet > balance) {
+        alert("Not enough credits!");
+        return;
+    }
+
+    balance -= bet;
+    updateBalance();
+
+    multiplier = 1;
+    crashed = false;
+
+    document.getElementById("flyText").style.display = "none";
+    document.getElementById("status").innerText = "";
+
+    clearInterval(interval);
+
+    interval = setInterval(() => {
+
+        if (crashed) return;
+
+        multiplier += 0.02;
+
+        let winAmount = bet * multiplier;
+
+        document.getElementById("multiplier").innerText = multiplier.toFixed(2) + "x";
+        document.getElementById("liveWin").innerText = "Winning: " + winAmount.toFixed(0);
+
+        let plane = document.getElementById("plane");
+
+        let x = multiplier * 22;
+        let y = multiplier * 18;
+
+        plane.style.transform = `translate(${x}px, -${y}px) rotate(25deg)`;
+
+        // long odds crash
+        if (Math.random() < 0.006 * multiplier) {
+            crashGame();
+        }
+
+    }, 100);
+}
+
+function cashOut() {
+
+    if (!crashed && multiplier > 1) {
+
+        let win = bet * multiplier;
+        balance += win;
+        updateBalance();
+
+        document.getElementById("status").innerText =
+            "✅ Cashed out at " + multiplier.toFixed(2) + "x → +" + win.toFixed(0);
+
+        clearInterval(interval);
+    }
+}
+
+function crashGame() {
+
+    crashed = true;
+
+    document.getElementById("flyText").style.display = "block";
+    document.getElementById("status").innerText =
+        "💥 Plane flew away at " + multiplier.toFixed(2) + "x";
+
+    clearInterval(interval);
+}
+
+</script>
+
+</body>
+</html>
